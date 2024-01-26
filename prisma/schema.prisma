@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  baumsters Baumster[]
+  createdAt DateTime   @default(now())
+}
+
+model Baumster {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+  createdAt DateTime @default(now())
+  legs      Leg[]
+}
+
+model Leg {
+  id             String    @id @default(uuid())
+  name           String
+  currentStatus  String?
+  currentDetails String?
+  history        History[]
+  updatedAt      DateTime? @updatedAt()
+  createdAt      DateTime  @default(now())
+  baumster       Baumster? @relation(fields: [baumsterId], references: [id])
+  baumsterId     String
+
+  @@unique([name, baumsterId])
+}
+
+model History {
+  id      String   @id @default(uuid())
+  status  String?
+  details String?
+  date    DateTime
+  leg     Leg?     @relation(fields: [legId], references: [id])
+  legId   String?
+}
