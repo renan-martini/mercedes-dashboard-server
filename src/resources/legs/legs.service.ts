@@ -97,15 +97,14 @@ export class LegsService {
   }
 
   async update(id: string, updateLegDto: UpdateLegDto) {
-    const date =
-      new Date(updateLegDto.updatedAt + 'T12:00:00.00-0300') ?? new Date();
+    const date = new Date(updateLegDto.updatedAt + 'T12:00:00.00-0300');
 
     const expectedDate =
       new Date(updateLegDto.expectedDate + 'T12:00:00.00-0300') ?? undefined;
     await this.prisma.history.create({
       data: {
-        date,
-        expectedDate,
+        ...(updateLegDto.updatedAt ? { date } : { date: new Date() }),
+        ...(updateLegDto.expectedDate && { expectedDate }),
         details: updateLegDto.currentDetails,
         status: updateLegDto.currentStatus as unknown as string,
         leg: { connect: { id } },
