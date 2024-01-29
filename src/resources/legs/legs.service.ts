@@ -96,15 +96,17 @@ export class LegsService {
     return this.prisma.leg.findFirstOrThrow({ where: { id } });
   }
 
-  async update(id: string, updateLegDto: UpdateLegDto) {
+  async update(
+    id: string,
+    { expectedDate: ed, ...updateLegDto }: UpdateLegDto,
+  ) {
     const date = new Date(updateLegDto.updatedAt + 'T12:00:00.00-0300');
 
-    const expectedDate =
-      new Date(updateLegDto.expectedDate + 'T12:00:00.00-0300') ?? undefined;
+    const expectedDate = new Date(ed + 'T12:00:00.00-0300') ?? undefined;
     await this.prisma.history.create({
       data: {
         ...(updateLegDto.updatedAt ? { date } : { date: new Date() }),
-        ...(updateLegDto.expectedDate && { expectedDate }),
+        ...(ed && { expectedDate }),
         details: updateLegDto.currentDetails,
         status: updateLegDto.currentStatus as unknown as string,
         leg: { connect: { id } },
