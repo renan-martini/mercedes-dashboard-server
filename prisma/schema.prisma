@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Project {
@@ -32,7 +32,7 @@ model Leg {
   currentStatus  String?
   currentDetails String?
   history        History[]
-  updatedAt      DateTime? @updatedAt()
+  updatedAt      DateTime?
   createdAt      DateTime  @default(now())
   baumster       Baumster? @relation(fields: [baumsterId], references: [id])
   baumsterId     String
@@ -41,10 +41,11 @@ model Leg {
 }
 
 model History {
-  id      String   @id @default(uuid())
-  status  String?
-  details String?
-  date    DateTime
-  leg     Leg?     @relation(fields: [legId], references: [id])
-  legId   String?
+  id           String    @id @default(uuid())
+  status       String?
+  details      String?
+  expectedDate DateTime?
+  date         DateTime
+  leg          Leg?      @relation(fields: [legId], references: [id])
+  legId        String
 }

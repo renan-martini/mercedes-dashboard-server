@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional } from 'class-validator';
 enum STATUS {
   DEV,
   CALCULUS,
@@ -13,4 +13,11 @@ export class CreateLegDto {
   currentStatus?: STATUS;
 
   currentDetails?: string;
+
+  @IsDateString()
+  updatedAt: Date;
+
+  @IsDateString()
+  @IsOptional()
+  expectedDate: Date;
 }

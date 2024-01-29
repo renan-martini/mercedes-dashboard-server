@@ -53,15 +53,41 @@ export class LegsService {
     const startsAt = period === 'WEEK' ? DateUtility.lastSunday() : undefined;
 
     const finishesAt = period === 'WEEK' ? DateUtility.nextSunday() : undefined;
-    const legs = await this.prisma.leg.findMany({
-      ...(!['ALL', undefined].includes(period)
-        ? { where: { updatedAt: { gte: startsAt, lt: finishesAt } } }
-        : {}),
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        baumster: { include: { project: true } },
-      },
-    });
+    const legs = !['ALL', undefined].includes(period)
+      ? await this.prisma.history.findMany({
+          where: { date: { gte: startsAt, lt: finishesAt } },
+          orderBy: { date: 'desc' },
+          include: {
+            leg: { include: { baumster: { include: { project: true } } } },
+          },
+        })
+      : await this.prisma.leg.findMany({
+          where: {
+            NOT: {
+              AND: {
+                currentDetails: '',
+                currentStatus: '',
+                updatedAt: null,
+              },
+            },
+          },
+          include: {
+            baumster: {
+              include: {
+                project: true,
+              },
+            },
+            history: { orderBy: { date: 'desc' } },
+          },
+        });
+
+    if (['ALL', undefined].includes(period)) {
+      legs.sort((a, b) => {
+        if (a.updatedAt > b.updatedAt) return -1;
+        if (a.updatedAt == b.updatedAt) return 0;
+        return 1;
+      });
+    }
 
     return legs;
   }
@@ -71,21 +97,26 @@ export class LegsService {
   }
 
   async update(id: string, updateLegDto: UpdateLegDto) {
-    const leg = await this.prisma.leg.findFirst({ where: { id } });
-    if (updateLegDto.currentDetails || updateLegDto.currentStatus) {
-      await this.prisma.history.create({
-        data: {
-          date: leg.updatedAt ?? new Date(),
-          details: leg.currentDetails,
-          status: leg.currentStatus,
-          leg: { connect: { id } },
-        },
-      });
-    }
+    const date =
+      new Date(updateLegDto.updatedAt + 'T12:00:00.00-0300') ?? new Date();
+
+    const expectedDate =
+      new Date(updateLegDto.expectedDate + 'T12:00:00.00-0300') ?? undefined;
+    await this.prisma.history.create({
+      data: {
+        date,
+        expectedDate,
+        details: updateLegDto.currentDetails,
+        status: updateLegDto.currentStatus as unknown as string,
+        leg: { connect: { id } },
+      },
+    });
+
     return this.prisma.leg.update({
       where: { id },
       data: {
         ...updateLegDto,
+        updatedAt: date,
         currentStatus: updateLegDto.currentStatus as unknown as string,
       },
     });
