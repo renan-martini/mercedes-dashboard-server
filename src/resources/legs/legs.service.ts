@@ -104,11 +104,28 @@ export class LegsService {
     ...updateLegDto
   }: UpdateLegDto) {
     const date = new Date(updateLegDto.updatedAt);
-
     const expectedDate = new Date(ed) ?? undefined;
-    let foundBaumster = await this.prisma.baumster.findFirst({
-      where: { code: baumster, project: { name: project } },
+
+    const foundProject = await this.prisma.project.findFirst({
+      where: { name: project },
     });
+
+    let foundBaumster = await this.prisma.baumster.findFirst({
+      where: {
+        code: baumster,
+        ...(foundProject && { project: { name: project } }),
+      },
+    });
+
+    if (!foundProject && foundBaumster) {
+      const createdProject = await this.prisma.project.create({
+        data: { name: project },
+      });
+      await this.prisma.baumster.update({
+        where: { id: foundBaumster.id },
+        data: { project: { connect: { id: createdProject.id } } },
+      });
+    }
 
     if (!foundBaumster) {
       foundBaumster = await this.prisma.baumster.create({
