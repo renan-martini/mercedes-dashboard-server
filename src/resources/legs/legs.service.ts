@@ -9,19 +9,19 @@ import { UpdateLegDto } from './dto/update-leg.dto';
 @Injectable()
 export class LegsService {
   constructor(private prisma: PrismaService) {}
+  legsNames = [
+    'L1J',
+    'L1F',
+    'L1K',
+    'L1P',
+    'L1R',
+    'L1T',
+    'L2T',
+    'L3A/L3B',
+    'L4N',
+  ];
 
   async create() {
-    const legsNames = [
-      'L1J',
-      'L1F',
-      'L1K',
-      'L1P',
-      'L1R',
-      'L1T',
-      'L2T',
-      'L3A/L3B',
-      'L4N',
-    ];
     const promises: Prisma.Prisma__LegClient<
       {
         id: string;
@@ -36,7 +36,7 @@ export class LegsService {
       DefaultArgs
     >[] = [];
     Baumsters.forEach((bm) => {
-      legsNames.forEach((leg) => {
+      this.legsNames.forEach((leg) => {
         const promise = this.prisma.leg.create({
           data: { name: leg, baumster: { connect: { code: bm.code } } },
         });
@@ -106,12 +106,48 @@ export class LegsService {
     const date = new Date(updateLegDto.updatedAt);
 
     const expectedDate = new Date(ed) ?? undefined;
-    const foundBaumster = await this.prisma.baumster.findFirst({
+    let foundBaumster = await this.prisma.baumster.findFirst({
       where: { code: baumster, project: { name: project } },
     });
 
     if (!foundBaumster) {
-      throw new HttpException('Invalid baumster', 404);
+      foundBaumster = await this.prisma.baumster.create({
+        data: {
+          code: baumster,
+          project: {
+            connectOrCreate: {
+              where: { name: project },
+              create: { name: project },
+            },
+          },
+        },
+      });
+
+      const promises: Prisma.Prisma__LegClient<
+        {
+          id: string;
+          name: string;
+          currentStatus: string;
+          currentDetails: string;
+          updatedAt: Date;
+          createdAt: Date;
+          baumsterId: string;
+        },
+        never,
+        DefaultArgs
+      >[] = [];
+
+      this.legsNames.forEach((leg) => {
+        const promise = this.prisma.leg.create({
+          data: {
+            name: leg,
+            baumster: { connect: { code: foundBaumster.code } },
+          },
+        });
+        promises.push(promise);
+      });
+
+      await Promise.all(promises);
     }
 
     const foundLeg = await this.prisma.leg.findFirst({
