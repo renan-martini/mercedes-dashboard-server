@@ -28,6 +28,12 @@ export class BaumstersService {
     return this.prisma.baumster.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
+  search(project: string) {
+    return this.prisma.baumster.findMany({
+      where: { project: { name: project } },
+    });
+  }
+
   findOne(id: string) {
     return this.prisma.baumster.findUnique({ where: { id } });
   }

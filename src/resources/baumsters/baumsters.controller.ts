@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { BaumstersService } from './baumsters.service';
 import { CreateBaumsterDto } from './dto/create-baumster.dto';
@@ -23,6 +24,11 @@ export class BaumstersController {
   @Get()
   findAll() {
     return this.baumstersService.findAll();
+  }
+
+  @Get('/search')
+  search(@Query('project') project: string) {
+    return this.baumstersService.search(project);
   }
 
   @Get(':id')

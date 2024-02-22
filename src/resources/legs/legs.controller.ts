@@ -30,9 +30,9 @@ export class LegsController {
     return this.legsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLegDto: UpdateLegDto) {
-    return this.legsService.update(id, updateLegDto);
+  @Patch()
+  update(@Body() updateLegDto: UpdateLegDto) {
+    return this.legsService.update(updateLegDto);
   }
 
   @Delete(':id')

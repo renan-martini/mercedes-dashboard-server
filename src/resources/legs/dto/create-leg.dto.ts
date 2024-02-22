@@ -8,6 +8,12 @@ enum STATUS {
   SOP,
 }
 export class CreateLegDto {
+  baumster: string;
+
+  leg: string;
+
+  project: string;
+
   @IsEnum(STATUS)
   @IsOptional()
   currentStatus?: STATUS;

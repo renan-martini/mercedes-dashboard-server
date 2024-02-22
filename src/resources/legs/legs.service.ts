@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import * as Baumsters from '../../../baumsters.json';
 import { PrismaService } from 'src/db/prisma';
 import { Prisma } from '@prisma/client';
@@ -96,25 +96,51 @@ export class LegsService {
     return this.prisma.leg.findFirstOrThrow({ where: { id } });
   }
 
-  async update(
-    id: string,
-    { expectedDate: ed, ...updateLegDto }: UpdateLegDto,
-  ) {
-    const date = new Date(updateLegDto.updatedAt + 'T12:00:00.00-0300');
+  async update({
+    expectedDate: ed,
+    baumster,
+    project,
+    leg,
+    ...updateLegDto
+  }: UpdateLegDto) {
+    const date = new Date(updateLegDto.updatedAt);
 
-    const expectedDate = new Date(ed + 'T12:00:00.00-0300') ?? undefined;
+    const expectedDate = new Date(ed) ?? undefined;
+    const foundBaumster = await this.prisma.baumster.findFirst({
+      where: { code: baumster, project: { name: project } },
+    });
+
+    if (!foundBaumster) {
+      throw new HttpException('Invalid baumster', 404);
+    }
+
+    const foundLeg = await this.prisma.leg.findFirst({
+      where: {
+        baumsterId: foundBaumster.id,
+        name: leg,
+      },
+    });
+
+    if (!foundLeg) {
+      throw new HttpException('Invalid leg', 404);
+    }
+
     await this.prisma.history.create({
       data: {
         ...(updateLegDto.updatedAt ? { date } : { date: new Date() }),
         ...(ed && { expectedDate }),
         details: updateLegDto.currentDetails,
         status: updateLegDto.currentStatus as unknown as string,
-        leg: { connect: { id } },
+        leg: {
+          connect: {
+            id: foundLeg.id,
+          },
+        },
       },
     });
 
     return this.prisma.leg.update({
-      where: { id },
+      where: { id: foundLeg.id },
       data: {
         ...updateLegDto,
         updatedAt: date,
