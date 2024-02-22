@@ -39,4 +39,9 @@ export class LegsController {
   remove(@Param('id') id: string) {
     return this.legsService.remove(id);
   }
+
+  @Delete('/history/:id')
+  deleteHistory(@Param('id') id: string) {
+    return this.legsService.deleteHistory(id);
+  }
 }

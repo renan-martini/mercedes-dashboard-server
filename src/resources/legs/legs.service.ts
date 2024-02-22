@@ -188,4 +188,26 @@ export class LegsService {
   remove(id: string) {
     return this.prisma.leg.delete({ where: { id } });
   }
+
+  async deleteHistory(id: string) {
+    const leg = await this.prisma.leg.findFirst({
+      where: { history: { some: { id } } },
+    });
+
+    await this.prisma.history.delete({ where: { id } });
+
+    const updatedLeg = await this.prisma.leg.findFirst({
+      where: { id: leg.id },
+      include: { history: { orderBy: { date: 'desc' } } },
+    });
+
+    await this.prisma.leg.update({
+      where: { id: leg.id },
+      data: {
+        currentDetails: updatedLeg.history[0]?.details || '',
+        currentStatus: updatedLeg.history[0]?.status || '',
+        updatedAt: updatedLeg.history[0]?.date || null,
+      },
+    });
+  }
 }
